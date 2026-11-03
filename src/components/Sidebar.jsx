@@ -2,11 +2,8 @@
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import {
-  LayoutDashboard,
   Scan,
   Layers,
-  History,
-  Settings,
   Recycle,
   Menu,
   X,
@@ -31,8 +28,7 @@ function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   const linkClass = ({ isActive }) =>
-    `flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition
-    ${
+    `flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition ${
       isActive
         ? "bg-green-700 text-white shadow-sm"
         : "text-gray-600 hover:bg-green-50 hover:text-green-700"
@@ -44,10 +40,10 @@ function Sidebar() {
       <button
         type="button"
         onClick={() => setIsOpen(true)}
-        className="fixed left-4 top-[49rem] z-30 rounded-lg bg-green-700 p-2 text-white shadow-lg md:hidden"
+        className="fixed left-4 top-4 z-[60] flex h-11 w-11 items-center justify-center rounded-xl bg-green-700 text-white shadow-lg md:hidden"
         aria-label="Open menu"
       >
-        <Menu size={20} />
+        <Menu size={22} />
       </button>
 
       {/* Mobile Overlay */}
@@ -70,7 +66,7 @@ function Sidebar() {
         `}
       >
         {/* Logo */}
-        <div className="flex h-20 items-center justify-between border-b border-gray-100 px-5">
+        <div className="flex h-20 shrink-0 items-center justify-between border-b border-gray-100 px-5">
           <div className="flex items-center gap-3">
             <div className="rounded-xl bg-green-100 p-2 text-green-700">
               <Recycle size={25} />
@@ -88,7 +84,6 @@ function Sidebar() {
             )}
           </div>
 
-          {/* Mobile Close */}
           <button
             type="button"
             onClick={() => setIsOpen(false)}
@@ -101,9 +96,11 @@ function Sidebar() {
 
         {/* Navigation */}
         <nav className="flex-1 space-y-2 overflow-y-auto p-4">
-          <p className="mb-3 px-3 text-xs font-semibold uppercase tracking-wider text-gray-400">
-            {!isCollapsed && "Main Menu"}
-          </p>
+          {!isCollapsed && (
+            <p className="mb-3 px-3 text-xs font-semibold uppercase tracking-wider text-gray-400">
+              Main Menu
+            </p>
+          )}
 
           {menus.map((menu) => {
             const Icon = menu.icon;
@@ -112,23 +109,19 @@ function Sidebar() {
               <NavLink
                 key={menu.path}
                 to={menu.path}
-                end={menu.path === "/"}
                 onClick={() => setIsOpen(false)}
                 title={isCollapsed ? menu.name : ""}
                 className={linkClass}
               >
                 <Icon size={20} className="shrink-0" />
-
-                {!isCollapsed && (
-                  <span>{menu.name}</span>
-                )}
+                {!isCollapsed && <span>{menu.name}</span>}
               </NavLink>
             );
           })}
         </nav>
 
         {/* Bottom Section */}
-        <div className="border-t border-gray-100 p-4">
+        <div className="shrink-0 border-t border-gray-100 p-4">
           <div className="rounded-xl bg-green-50 p-3">
             {!isCollapsed ? (
               <>
@@ -153,9 +146,7 @@ function Sidebar() {
           >
             <ChevronLeft
               size={20}
-              className={`transition-transform ${
-                isCollapsed ? "rotate-180" : ""
-              }`}
+              className={isCollapsed ? "rotate-180" : ""}
             />
           </button>
         </div>
