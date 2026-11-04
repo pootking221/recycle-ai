@@ -328,6 +328,7 @@ function Segmentation() {
                                 ? "แสดงภาพต้นฉบับพร้อม Segmentation Mask"
                                 : "ภาพต้นฉบับ"}
                         </p>
+
                         <button
                             onClick={() => {
                                 clearPreviousImage();
@@ -336,8 +337,8 @@ function Segmentation() {
                         >
                             Remove Image
                         </button>
-
                     </div>
+
                 )}
 
                 {/* Start Segmentation */}

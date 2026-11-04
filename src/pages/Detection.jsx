@@ -17,43 +17,7 @@ function Detection() {
         setResults(null);
         setImageSize(null);
     };
-    //   test
-    // const testModel = async () => {
-    //     try {
-    //         console.log("กำลังโหลดโมเดล...");
-
-    //         const session = await loadModel("/models/detection.onnx");
-
-    //         console.log("โหลดโมเดลสำเร็จ!");
-    //         console.log("Input Names:", session.inputNames);
-    //         console.log("Output Names:", session.outputNames);
-
-    //         // ทดสอบ Input ขนาด 640x640
-    //         const input = new ort.Tensor(
-    //             "float32",
-    //             new Float32Array(1 * 3 * 640 * 640),
-    //             [1, 3, 640, 640]
-    //         );
-
-    //         const results = await session.run({
-    //             images: input,
-    //         });
-
-    //         // แสดงขนาด Output
-    //         for (const [name, tensor] of Object.entries(results)) {
-    //             console.log("Output:", name);
-    //             console.log("Shape:", tensor.dims);
-    //         }
-
-    //         alert("ทดสอบโมเดล Detection สำเร็จ!");
-    //     } catch (error) {
-    //         console.error("เกิดข้อผิดพลาด:", error);
-    //         console.error("Error Message:", error.message);
-    //         console.error("Error Stack:", error.stack);
-
-    //         alert("ทดสอบโมเดลไม่สำเร็จ");
-    //     }
-    // };
+   
 
     const runDetection = async () => {
         if (!image) return;
@@ -267,16 +231,17 @@ function Detection() {
                                     })}
                                 </svg>
                             )}
-                            <button
-                                onClick={() => {
-                                    clearPreviousImage();
-                                }}
-                                className="mt-3 rounded-lg bg-red-600 px-4 py-2 text-white hover:bg-red-700"
-                            >
-                                Remove Image
-                            </button>
-                        </div>
 
+                        </div>
+                    
+                        <button
+                            onClick={() => {
+                                clearPreviousImage();
+                            }}
+                            className="mt-3 rounded-lg bg-red-600 px-4 py-2 text-white hover:bg-red-700"
+                        >
+                            Remove Image
+                        </button>
 
                     </div>
                 )}
