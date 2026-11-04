@@ -106,7 +106,7 @@ function Segmentation() {
             // โหลดโมเดล Segmentation
             console.log("กำลังโหลด Segmentation Model...");
 
-            const session = await loadModel("/models/segmentation.onnx");
+            const session = await loadModel("/models/segmentation_2.onnx");
 
             // โหลดภาพและเตรียมข้อมูลก่อนเข้าโมเดล
             const img = new Image();
