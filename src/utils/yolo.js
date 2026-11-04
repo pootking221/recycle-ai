@@ -282,6 +282,8 @@ export function processSegmentation(output0, output1, confidenceThreshold = 0.25
 // 9. สร้างภาพ Mask Overlay สำหรับ Segmentation
 // ==========================================
 
+
+
 export function createSegmentationOverlay(
     output0,
     output1,
@@ -290,130 +292,79 @@ export function createSegmentationOverlay(
     confidenceThreshold = 0.25,
     maskThreshold = 0.5
 ) {
+    const detections = applyNMS(
+        readPredictions(output0, confidenceThreshold, 32)
+    );
 
-    // อ่านผลการตรวจจับและค่า Mask Coefficients
-    const predictions = readPredictions(output0, confidenceThreshold, 32);
-
-    // คัดกรองกรอบวัตถุที่ซ้ำกัน
-    const selected = applyNMS(predictions);
-
-    // อ่านข้อมูล Prototype Mask จากผลลัพธ์ของโมเดล
     const prototypes = output1.data;
-
-    // อ่านความสูงและความกว้างของ Prototype Mask
+    const numMasks = output1.dims[1];
     const maskHeight = output1.dims[2];
     const maskWidth = output1.dims[3];
 
-    // กำหนดจำนวน Mask ที่โมเดลใช้สร้างภาพ
-    const numMasks = 32;
-
-    // สร้าง Canvas โดยใช้ขนาดเท่ากับภาพต้นฉบับ
     const canvas = document.createElement("canvas");
     canvas.width = imageWidth;
     canvas.height = imageHeight;
 
-    // เตรียม Context และพื้นที่สำหรับเก็บข้อมูลภาพ
     const ctx = canvas.getContext("2d");
     const imageData = ctx.createImageData(imageWidth, imageHeight);
 
-    // วนประมวลผลวัตถุที่ตรวจจับได้ทีละชิ้น
-    selected.forEach(detection => {
-
-        // เลือกสีตามประเภทของวัตถุ
+    for (const detection of detections) {
         const color = CLASS_COLORS[detection.classId];
 
-        // วนตรวจสอบทุกพิกเซลของ Prototype Mask
-        for (let y = 0; y < maskHeight; y++) {
-            for (let x = 0; x < maskWidth; x++) {
+        for (let y = 0; y < imageHeight; y++) {
+            for (let x = 0; x < imageWidth; x++) {
+                const modelX = (x / imageWidth) * 640;
+                const modelY = (y / imageHeight) * 640;
 
-                // แปลงตำแหน่ง Mask ให้เทียบกับพิกัดภาพขนาด 640x640
-                const px = (x / maskWidth) * 640;
-                const py = (y / maskHeight) * 640;
-
-                // ไม่ประมวลผลพิกเซลที่อยู่นอกกรอบวัตถุ
                 if (
-                    px < detection.x1 ||
-                    px > detection.x2 ||
-                    py < detection.y1 ||
-                    py > detection.y2
+                    modelX < detection.x1 ||
+                    modelX > detection.x2 ||
+                    modelY < detection.y1 ||
+                    modelY > detection.y2
                 ) continue;
 
-                // กำหนดค่าเริ่มต้นสำหรับคำนวณ Mask
+                const maskX = Math.min(
+                    maskWidth - 1,
+                    Math.floor((modelX / 640) * maskWidth)
+                );
+
+                const maskY = Math.min(
+                    maskHeight - 1,
+                    Math.floor((modelY / 640) * maskHeight)
+                );
+
                 let value = 0;
 
-                // รวมค่า Prototype Mask ทั้ง 32 ช่อง
-                // โดยคูณกับ Coefficients ของวัตถุแต่ละชิ้น
                 for (let m = 0; m < numMasks; m++) {
-
-                    // คำนวณตำแหน่งข้อมูลของ Prototype ใน Array
                     const index =
                         m * maskHeight * maskWidth +
-                        y * maskWidth +
-                        x;
+                        maskY * maskWidth +
+                        maskX;
 
-                    // คำนวณผลรวมของ Prototype และ Coefficients
                     value +=
                         detection.coefficients[m] * prototypes[index];
                 }
 
-                // ใช้ Sigmoid แปลงค่าให้อยู่ระหว่าง 0-1
                 const probability = 1 / (1 + Math.exp(-value));
 
-                // หากค่าความน่าจะเป็นต่ำกว่าเกณฑ์ ให้ข้ามพิกเซลนี้
-                if (probability < maskThreshold) continue;
+                if (probability >= maskThreshold) {
+                    const index = (y * imageWidth + x) * 4;
 
-                // แปลงพิกัดจาก Mask ให้ตรงกับขนาดภาพต้นฉบับ
-                const imageX = Math.floor((x / maskWidth) * imageWidth);
-                const imageY = Math.floor((y / maskHeight) * imageHeight);
-
-                // ป้องกันไม่ให้พิกัดเกินขอบเขตของภาพ
-                if (imageX >= imageWidth || imageY >= imageHeight) continue;
-
-                // คำนวณตำแหน่งของพิกเซลใน ImageData
-                const index = (imageY * imageWidth + imageX) * 4;
-
-                // กำหนดค่าสีแดง สีเขียว และสีน้ำเงิน
-                imageData.data[index] = color[0];
-                imageData.data[index + 1] = color[1];
-                imageData.data[index + 2] = color[2];
-
-                // กำหนดความโปร่งใสของ Mask
-                imageData.data[index + 3] = 130;
+                    imageData.data[index] = color[0];
+                    imageData.data[index + 1] = color[1];
+                    imageData.data[index + 2] = color[2];
+                    imageData.data[index + 3] = 150;
+                }
             }
         }
+    }
 
-        // คำนวณอัตราส่วนระหว่างภาพต้นฉบับกับภาพขนาด 640x640
-        const scaleX = imageWidth / 640;
-        const scaleY = imageHeight / 640;
-
-        // แปลงตำแหน่งกรอบวัตถุให้ตรงกับภาพต้นฉบับ
-        const x = detection.x1 * scaleX;
-        const y = detection.y1 * scaleY;
-
-        // วาดพื้นหลังป้ายชื่อคลาส
-        ctx.fillStyle = `rgb(${color.join(",")})`;
-        ctx.fillRect(x, Math.max(0, y - 24), 110, 24);
-
-        // กำหนดรูปแบบข้อความบนป้าย
-        ctx.fillStyle = "#ffffff";
-        ctx.font = "14px Arial";
-
-        // แสดงชื่อคลาสและค่าความมั่นใจเป็นเปอร์เซ็นต์
-        ctx.fillText(
-            `${detection.className} ${(detection.confidence * 100).toFixed(1)}%`,
-            x + 5,
-            Math.max(16, y - 7)
-        );
-    });
-
-    // นำข้อมูล Mask ทั้งหมดไปวาดลงบน Canvas
     ctx.putImageData(imageData, 0, 0);
 
-    // ส่งภาพ Mask ในรูปแบบ Base64 กลับไปให้หน้าเว็บ
-    // พร้อมจำนวนวัตถุและรายละเอียดผลการตรวจจับ
     return {
         image: canvas.toDataURL("image/png"),
-        count: selected.length,
-        detections: selected,
+        count: detections.length,
+        detections,
     };
 }
+
