@@ -165,6 +165,24 @@ function Segmentation() {
                 <p className="mt-1 text-gray-500">
                     ตรวจจับและแสดงขอบเขตขยะรีไซเคิลด้วย YOLO
                 </p>
+
+                {/* คำอธิบายสีของ Segmentation */}
+                <div className="mb-3 flex flex-wrap gap-4 text-sm">
+                    <div className="flex items-center gap-2">
+                        <span className="h-4 w-4 rounded bg-red-500"></span>
+                        <span>Metal (โลหะ)</span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        <span className="h-4 w-4 rounded bg-blue-500"></span>
+                        <span>Paper (กระดาษ)</span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        <span className="h-4 w-4 rounded bg-yellow-400"></span>
+                        <span>Plastic (พลาสติก)</span>
+                    </div>
+                </div>
             </div>
 
             {/* ส่วนเลือกภาพและแสดงผล */}

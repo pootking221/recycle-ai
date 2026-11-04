@@ -30,7 +30,7 @@ export async function loadModel(modelPath) {
         executionProviders: ["wasm"],
     });
 
-    // แสดงข้อความใน Console เมื่อโหลดโมเดลสำเร็จ
+    
     console.log("Model loaded:", modelPath);
 
     // ส่ง Session กลับไปให้หน้าเว็บเรียกใช้ประมวลผล
@@ -86,11 +86,9 @@ export async function preprocessImage(image) {
 
 
 // ==========================================
-// 4. คำนวณค่า IoU
+//  ใช้คำนวณพื้นที่ที่กรอบวัตถุสองกรอบซ้อนทับกัน
 // ==========================================
 
-// IoU (Intersection over Union)
-// ใช้คำนวณพื้นที่ที่กรอบวัตถุสองกรอบซ้อนทับกัน
 function calculateIoU(a, b) {
 
     // หาพิกัดขอบเขตที่ซ้อนทับกันของกรอบทั้งสอง
@@ -284,6 +282,8 @@ export function processSegmentation(output0, output1, confidenceThreshold = 0.25
 
 
 
+
+ // สร้าง Segmentation Mask และแสดงสีบนวัตถุที่ตรวจพบ
 export function createSegmentationOverlay(
     output0,
     output1,
@@ -292,30 +292,42 @@ export function createSegmentationOverlay(
     confidenceThreshold = 0.25,
     maskThreshold = 0.5
 ) {
+    // อ่านผลลัพธ์และกรองกรอบที่ซ้ำกัน
     const detections = applyNMS(
         readPredictions(output0, confidenceThreshold, 32)
     );
 
+    // ดึงข้อมูล Prototype Mask จากโมเดล
     const prototypes = output1.data;
     const numMasks = output1.dims[1];
     const maskHeight = output1.dims[2];
     const maskWidth = output1.dims[3];
 
+    // สร้าง Canvas สำหรับแสดงผล Mask
     const canvas = document.createElement("canvas");
     canvas.width = imageWidth;
     canvas.height = imageHeight;
 
     const ctx = canvas.getContext("2d");
+
+    // สร้างพื้นที่ข้อมูลสีและความโปร่งใส
     const imageData = ctx.createImageData(imageWidth, imageHeight);
 
+    // วนลูปวัตถุที่ตรวจพบแต่ละรายการ
     for (const detection of detections) {
+
+        // กำหนดสีตามประเภทของวัตถุ
         const color = CLASS_COLORS[detection.classId];
 
+        // วนลูปพิกัดทุก Pixel ของภาพต้นฉบับ
         for (let y = 0; y < imageHeight; y++) {
             for (let x = 0; x < imageWidth; x++) {
+
+                // แปลงพิกัดภาพต้นฉบับเป็นขนาด 640x640
                 const modelX = (x / imageWidth) * 640;
                 const modelY = (y / imageHeight) * 640;
 
+                // ตรวจสอบว่า Pixel อยู่ภายในกรอบวัตถุหรือไม่
                 if (
                     modelX < detection.x1 ||
                     modelX > detection.x2 ||
@@ -323,6 +335,7 @@ export function createSegmentationOverlay(
                     modelY > detection.y2
                 ) continue;
 
+                // แปลงพิกัดเป็นตำแหน่งใน Prototype Mask
                 const maskX = Math.min(
                     maskWidth - 1,
                     Math.floor((modelX / 640) * maskWidth)
@@ -333,6 +346,7 @@ export function createSegmentationOverlay(
                     Math.floor((modelY / 640) * maskHeight)
                 );
 
+                // คำนวณค่าของ Mask จาก Coefficients และ Prototypes
                 let value = 0;
 
                 for (let m = 0; m < numMasks; m++) {
@@ -345,26 +359,36 @@ export function createSegmentationOverlay(
                         detection.coefficients[m] * prototypes[index];
                 }
 
+                // แปลงค่า Mask ด้วย Sigmoid ให้อยู่ในช่วง 0-1
                 const probability = 1 / (1 + Math.exp(-value));
 
+                // ตรวจสอบว่า Pixel ผ่านค่า Mask Threshold หรือไม่
                 if (probability >= maskThreshold) {
+
+                    // คำนวณตำแหน่ง Pixel ในภาพต้นฉบับ
                     const index = (y * imageWidth + x) * 4;
 
+                    // กำหนดสี RGB ตามประเภทวัตถุ
                     imageData.data[index] = color[0];
                     imageData.data[index + 1] = color[1];
                     imageData.data[index + 2] = color[2];
+
+                    // กำหนดความโปร่งใสของ Mask
                     imageData.data[index + 3] = 150;
                 }
             }
         }
     }
 
+    // นำข้อมูลสี Mask ไปแสดงบน Canvas
     ctx.putImageData(imageData, 0, 0);
 
+    // ส่งคืนภาพ Mask จำนวนวัตถุ และรายละเอียดผลการตรวจจับ
     return {
         image: canvas.toDataURL("image/png"),
         count: detections.length,
         detections,
     };
 }
+
 

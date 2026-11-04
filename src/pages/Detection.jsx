@@ -100,6 +100,16 @@ function Detection() {
         closeCamera();
     };
 
+    const getClassColor = (className) => {
+        const colors = {
+            Metal: "#ef4444",
+            Paper: "#3b82f6",
+            Plastic: "#eab308",
+        };
+
+        return colors[className] || "#22c55e";
+    };
+
     return (
         <div className="space-y-5">
             <div>
@@ -107,6 +117,24 @@ function Detection() {
                 <p className="mt-1 text-gray-500">
                     ตรวจจับขยะรีไซเคิลด้วย YOLO
                 </p>
+
+                {/* คำอธิบายสีของ Segmentation */}
+                <div className="mb-3 flex flex-wrap gap-4 text-sm">
+                    <div className="flex items-center gap-2">
+                        <span className="h-4 w-4 rounded bg-red-500"></span>
+                        <span>Metal (โลหะ)</span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        <span className="h-4 w-4 rounded bg-blue-500"></span>
+                        <span>Paper (กระดาษ)</span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        <span className="h-4 w-4 rounded bg-yellow-400"></span>
+                        <span>Plastic (พลาสติก)</span>
+                    </div>
+                </div>
             </div>
 
             <div className="rounded-xl border bg-white p-6">
@@ -207,16 +235,13 @@ function Detection() {
                                                     width={width}
                                                     height={height}
                                                     fill="none"
-                                                    stroke="#16a34a"
+                                                    stroke={getClassColor(item.className)}
                                                     strokeWidth="3"
                                                 />
                                                 <text
                                                     x={x}
-                                                    y={Math.max(y - 5, 15)}
-                                                    fill="white"
-                                                    stroke="#166534"
-                                                    strokeWidth="3"
-                                                    paintOrder="stroke"
+                                                    y={y - 5}
+                                                    fill={getClassColor(item.className)}
                                                     fontSize="16"
                                                     fontWeight="bold"
                                                 >
