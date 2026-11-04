@@ -1,6 +1,5 @@
 
 import { useRef, useState } from "react";
-import * as ort from "onnxruntime-web";
 import {
     loadModel,
     preprocessImage,
@@ -8,9 +7,9 @@ import {
 } from "../utils/yolo";
 
 function Segmentation() {
+    // เก็บข้อมูลภาพ กล้อง และผลลัพธ์
     const [image, setImage] = useState(null);
     const [camera, setCamera] = useState(false);
-
     const [loading, setLoading] = useState(false);
     const [results, setResults] = useState(null);
     const [maskImage, setMaskImage] = useState(null);
@@ -18,50 +17,17 @@ function Segmentation() {
     const videoRef = useRef(null);
     const streamRef = useRef(null);
 
+    // ล้างภาพและผลลัพธ์เดิม
     const clearPreviousImage = () => {
         setImage(null);
         setMaskImage(null);
         setResults(null);
     };
 
-    // ทดสอบการโหลดโมเดล
-    // const testModel = async () => {
-    //     try {
-    //         console.log("กำลังโหลด Segmentation...");
-
-    //         const session = await loadModel(
-    //             "/models/segmentation.onnx"
-    //         );
-
-    //         console.log("Segmentation โหลดสำเร็จ!");
-    //         console.log("Input Names:", session.inputNames);
-    //         console.log("Output Names:", session.outputNames);
-
-    //         const input = new ort.Tensor(
-    //             "float32",
-    //             new Float32Array(1 * 3 * 640 * 640),
-    //             [1, 3, 640, 640]
-    //         );
-
-    //         const output = await session.run({
-    //             images: input,
-    //         });
-
-    //         for (const [name, tensor] of Object.entries(output)) {
-    //             console.log("Output:", name);
-    //             console.log("Shape:", tensor.dims);
-    //         }
-
-    //         alert("ทดสอบ Segmentation สำเร็จ!");
-    //     } catch (error) {
-    //         console.error("Segmentation Error:", error);
-    //         alert("ทดสอบ Segmentation ไม่สำเร็จ");
-    //     }
-    // };
-
-    // เปิดกล้อง
+    // เปิดกล้องหลัง
     const openCamera = async () => {
         clearPreviousImage();
+
         try {
             const stream = await navigator.mediaDevices.getUserMedia({
                 video: { facingMode: "environment" },
@@ -81,12 +47,9 @@ function Segmentation() {
         }
     };
 
-    // ปิดกล้อง
+    // ปิดกล้องและหยุด Stream
     const closeCamera = () => {
-        streamRef.current?.getTracks().forEach((track) => {
-            track.stop();
-        });
-
+        streamRef.current?.getTracks().forEach((track) => track.stop());
         streamRef.current = null;
         setCamera(false);
     };
@@ -101,7 +64,6 @@ function Segmentation() {
         }
 
         const canvas = document.createElement("canvas");
-
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
 
@@ -128,14 +90,11 @@ function Segmentation() {
         }
 
         clearPreviousImage();
-
-        const imageUrl = URL.createObjectURL(file);
-        setImage(imageUrl);
-
+        setImage(URL.createObjectURL(file));
         event.target.value = "";
     };
 
-    // ประมวลผล Segmentation
+    // ประมวลผลภาพด้วย YOLO Segmentation
     const runSegmentation = async () => {
         if (!image || loading) return;
 
@@ -144,15 +103,13 @@ function Segmentation() {
             setResults(null);
             setMaskImage(null);
 
+            // โหลดโมเดล Segmentation
             console.log("กำลังโหลด Segmentation Model...");
 
-            const session = await loadModel(
-                "/models/segmentation.onnx"
-            );
+            const session = await loadModel("/models/segmentation.onnx");
 
-            // โหลดภาพ
+            // โหลดภาพและเตรียมข้อมูลก่อนเข้าโมเดล
             const img = new Image();
-
             img.src = image;
 
             await new Promise((resolve, reject) => {
@@ -160,27 +117,20 @@ function Segmentation() {
                 img.onerror = reject;
             });
 
-            // เตรียมภาพสำหรับโมเดล
             const inputTensor = await preprocessImage(img);
 
             console.log("กำลังประมวลผลภาพ...");
 
-            // รันโมเดล
+            // ส่งภาพเข้าโมเดล
             const output = await session.run({
                 images: inputTensor,
             });
 
-            console.log(
-                "Segmentation Output 0:",
-                output.output0.dims
-            );
+            // แสดงขนาด Output ใน Console
+            console.log("Segmentation Output 0:", output.output0.dims);
+            console.log("Segmentation Output 1:", output.output1.dims);
 
-            console.log(
-                "Segmentation Output 1:",
-                output.output1.dims
-            );
-
-            // สร้าง Segmentation Mask
+            // สร้าง Mask จากผลลัพธ์ของโมเดล
             const result = createSegmentationOverlay(
                 output.output0,
                 output.output1,
@@ -188,17 +138,10 @@ function Segmentation() {
                 img.naturalHeight
             );
 
-            console.log(
-                "Segmentation Results:",
-                result.detections
-            );
+            console.log("Segmentation Results:", result.detections);
+            console.log("จำนวนวัตถุที่ตรวจพบ:", result.count);
 
-            console.log(
-                "จำนวนวัตถุที่ตรวจพบ:",
-                result.count
-            );
-
-            // แสดงผล
+            // แสดงภาพ Mask และผลการตรวจจับ
             setMaskImage(result.image);
             setResults(result.detections);
 
@@ -213,7 +156,7 @@ function Segmentation() {
     return (
         <div className="space-y-5">
 
-            {/* Header */}
+            {/* หัวข้อหน้าเว็บ */}
             <div>
                 <h1 className="text-2xl font-bold text-gray-800">
                     Polygon Segmentation
@@ -224,17 +167,16 @@ function Segmentation() {
                 </p>
             </div>
 
-            {/* Main Card */}
+            {/* ส่วนเลือกภาพและแสดงผล */}
             <div className="rounded-xl border bg-white p-6">
 
                 <h2 className="mb-4 font-semibold text-gray-800">
                     เลือกภาพสำหรับประมวลผล
                 </h2>
 
-                {/* Buttons */}
+                {/* อัปโหลดภาพหรือเปิดกล้อง */}
                 <div className="flex flex-wrap gap-3">
 
-                    {/* Upload */}
                     <label className="cursor-pointer rounded-lg bg-green-700 px-4 py-2 text-white hover:bg-green-800">
                         Upload Image
 
@@ -246,28 +188,17 @@ function Segmentation() {
                         />
                     </label>
 
-                    {/* Camera */}
                     <button
                         onClick={openCamera}
                         className="rounded-lg border border-green-700 px-4 py-2 text-green-700 hover:bg-green-50"
                     >
                         Open Camera
                     </button>
-
-                    {/* {/* Test Model */}
-                    {/* <button
-                        onClick={testModel}
-                        className="rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
-                    >
-                        Test Segmentation Model
-                    </button>  */}
-
                 </div>
 
-                {/* Camera Preview */}
+                {/* แสดงภาพจากกล้อง */}
                 {camera && (
                     <div className="mt-5 space-y-3">
-
                         <video
                             ref={videoRef}
                             autoPlay
@@ -276,7 +207,6 @@ function Segmentation() {
                         />
 
                         <div className="flex gap-3">
-
                             <button
                                 onClick={takePhoto}
                                 className="rounded-lg bg-green-700 px-4 py-2 text-white"
@@ -290,29 +220,25 @@ function Segmentation() {
                             >
                                 Close Camera
                             </button>
-
                         </div>
                     </div>
                 )}
 
-                {/* Image Preview */}
+                {/* แสดงภาพต้นฉบับและ Segmentation Mask */}
                 {image && (
                     <div className="mt-6">
-
                         <h2 className="mb-3 font-semibold text-gray-800">
                             Segmentation Preview
                         </h2>
 
                         <div className="relative inline-block max-w-full overflow-hidden rounded-lg bg-gray-100">
 
-                            {/* Original Image */}
                             <img
                                 src={image}
                                 alt="Original Image"
                                 className="block max-h-96 max-w-full"
                             />
 
-                            {/* Segmentation Mask */}
                             {maskImage && (
                                 <img
                                     src={maskImage}
@@ -320,7 +246,6 @@ function Segmentation() {
                                     className="pointer-events-none absolute inset-0 h-full w-full"
                                 />
                             )}
-
                         </div>
 
                         <p className="mt-2 text-xs text-gray-400">
@@ -329,30 +254,26 @@ function Segmentation() {
                                 : "ภาพต้นฉบับ"}
                         </p>
 
+                        {/* ลบภาพและผลลัพธ์ */}
                         <button
-                            onClick={() => {
-                                clearPreviousImage();
-                            }}
+                            onClick={clearPreviousImage}
                             className="mt-3 rounded-lg bg-red-600 px-4 py-2 text-white hover:bg-red-700"
                         >
                             Remove Image
                         </button>
                     </div>
-
                 )}
 
-                {/* Start Segmentation */}
+                {/* เริ่มประมวลผล Segmentation */}
                 <button
                     onClick={runSegmentation}
                     disabled={!image || loading}
                     className="mt-5 rounded-lg bg-green-700 px-5 py-2 text-white hover:bg-green-800 disabled:cursor-not-allowed disabled:bg-gray-300"
                 >
-                    {loading
-                        ? "กำลังประมวลผล..."
-                        : "Start Segmentation"}
+                    {loading ? "กำลังประมวลผล..." : "Start Segmentation"}
                 </button>
 
-                {/* Results */}
+                {/* แสดงผลการตรวจจับ */}
                 {results && (
                     <div className="mt-6 rounded-xl border bg-white p-5">
 
@@ -360,9 +281,8 @@ function Segmentation() {
                             Segmentation Results
                         </h2>
 
-                        {/* Class Counts */}
+                        {/* สรุปจำนวนวัตถุแต่ละประเภท */}
                         <div className="grid grid-cols-3 gap-3">
-
                             {["Metal", "Paper", "Plastic"].map((name) => {
                                 const count = results.filter(
                                     (item) => item.className === name
@@ -383,12 +303,10 @@ function Segmentation() {
                                     </div>
                                 );
                             })}
-
                         </div>
 
-                        {/* Detection Details */}
+                        {/* รายละเอียดผลการตรวจจับ */}
                         <div className="mt-5">
-
                             <h3 className="mb-3 font-medium text-gray-800">
                                 Detection Details
                             </h3>
@@ -408,17 +326,14 @@ function Segmentation() {
                                         </span>
 
                                         <span className="text-gray-600">
-                                            {(item.score * 100).toFixed(2)}%
+                                            {(item.confidence * 100).toFixed(2)}%
                                         </span>
                                     </div>
                                 ))
                             )}
-
                         </div>
-
                     </div>
                 )}
-
             </div>
         </div>
     );

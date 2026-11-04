@@ -1,24 +1,26 @@
 
 import { useRef, useState } from "react";
 import { loadModel, preprocessImage, processDetection } from "../utils/yolo";
-import * as ort from "onnxruntime-web";
 
 function Detection() {
+    // เก็บข้อมูลภาพ กล้อง และผลตรวจจับ
     const [image, setImage] = useState(null);
     const [camera, setCamera] = useState(false);
-    const videoRef = useRef(null);
-    const streamRef = useRef(null);
     const [loading, setLoading] = useState(false);
     const [results, setResults] = useState(null);
     const [imageSize, setImageSize] = useState(null);
-    //function เคลียรูปเก่า
+
+    const videoRef = useRef(null);
+    const streamRef = useRef(null);
+
+    // ล้างภาพและผลตรวจจับเดิม
     const clearPreviousImage = () => {
         setImage(null);
         setResults(null);
         setImageSize(null);
     };
-   
 
+    // ประมวลผลภาพด้วยโมเดล YOLO
     const runDetection = async () => {
         if (!image) return;
 
@@ -26,11 +28,8 @@ function Detection() {
             setLoading(true);
             setResults(null);
 
-
-            // โหลดโมเดล
+            // โหลดโมเดลและเตรียมภาพ
             const session = await loadModel("/models/detection.onnx");
-
-            // โหลดภาพ
             const img = new Image();
             img.src = image;
 
@@ -39,22 +38,18 @@ function Detection() {
                 img.onerror = reject;
             });
 
-            // เตรียมภาพ
             const inputTensor = await preprocessImage(img);
 
-            // ส่งภาพเข้า YOLO
-            const output = await session.run({
-                images: inputTensor,
-            });
+            // ส่งภาพเข้าโมเดลและอ่านผลลัพธ์
+            const output = await session.run({ images: inputTensor });
 
             console.log("Detection Output:", output.output0.dims);
             console.log("Detection Data:", output.output0.data);
 
             const detections = processDetection(output.output0);
             console.log("Detection Results:", detections);
+
             setResults(detections);
-
-
         } catch (error) {
             console.error("Detection Error:", error);
             alert("ไม่สามารถตรวจจับภาพได้");
@@ -63,9 +58,10 @@ function Detection() {
         }
     };
 
-
+    // เปิดกล้องหลัง
     const openCamera = async () => {
         clearPreviousImage();
+
         try {
             const stream = await navigator.mediaDevices.getUserMedia({
                 video: { facingMode: "environment" },
@@ -84,13 +80,14 @@ function Detection() {
         }
     };
 
+    // ปิดกล้องและหยุด Stream
     const closeCamera = () => {
-
         streamRef.current?.getTracks().forEach((track) => track.stop());
         streamRef.current = null;
         setCamera(false);
     };
 
+    // ถ่ายภาพจากกล้อง
     const takePhoto = () => {
         const video = videoRef.current;
         const canvas = document.createElement("canvas");
@@ -115,6 +112,7 @@ function Detection() {
             <div className="rounded-xl border bg-white p-6">
                 <h2 className="mb-4 font-semibold">เลือกภาพ</h2>
 
+                {/* อัปโหลดภาพหรือเปิดกล้อง */}
                 <div className="flex flex-wrap gap-3">
                     <label className="cursor-pointer rounded-lg bg-green-700 px-4 py-2 text-white">
                         Upload Image
@@ -133,9 +131,6 @@ function Detection() {
                                 e.target.value = "";
                             }}
                         />
-
-
-
                     </label>
 
                     <button
@@ -146,6 +141,7 @@ function Detection() {
                     </button>
                 </div>
 
+                {/* แสดงภาพจากกล้อง */}
                 {camera && (
                     <div className="mt-5 space-y-3">
                         <video
@@ -173,7 +169,7 @@ function Detection() {
                     </div>
                 )}
 
-                {/* display */}
+                {/* แสดงภาพและกรอบตรวจจับ */}
                 {image && (
                     <div className="mt-5">
                         <div className="relative inline-block max-w-full">
@@ -224,27 +220,26 @@ function Detection() {
                                                     fontSize="16"
                                                     fontWeight="bold"
                                                 >
-                                                    {item.className} {(item.score * 100).toFixed(1)}%
+                                                    {item.className} {(item.confidence * 100).toFixed(1)}%
                                                 </text>
                                             </g>
                                         );
                                     })}
                                 </svg>
                             )}
-
                         </div>
-                    
+
+                        {/* ลบภาพที่เลือก */}
                         <button
-                            onClick={() => {
-                                clearPreviousImage();
-                            }}
+                            onClick={clearPreviousImage}
                             className="mt-3 rounded-lg bg-red-600 px-4 py-2 text-white hover:bg-red-700"
                         >
                             Remove Image
                         </button>
-
                     </div>
                 )}
+
+                {/* แสดงสรุปและรายละเอียดผลตรวจจับ */}
                 {results && (
                     <div className="mt-6 rounded-xl border bg-white p-5">
                         <h2 className="mb-4 text-lg font-semibold">
@@ -286,7 +281,7 @@ function Detection() {
                                                 {item.className}
                                             </td>
                                             <td className="p-3">
-                                                {(item.score * 100).toFixed(2)}%
+                                                {(item.confidence * 100).toFixed(2)}%
                                             </td>
                                         </tr>
                                     ))}
@@ -304,6 +299,7 @@ function Detection() {
                     </div>
                 )}
 
+                {/* ปุ่มเริ่มตรวจจับ */}
                 <button
                     onClick={runDetection}
                     disabled={!image || loading}
@@ -311,12 +307,6 @@ function Detection() {
                 >
                     {loading ? "กำลังตรวจจับ..." : "Start Detection"}
                 </button>
-                {/* <button
-                    onClick={testModel}
-                    className="mt-3 rounded-lg bg-blue-600 px-5 py-2 text-white"
-                >
-                    Test Model
-                </button> */}
             </div>
         </div>
     );
