@@ -18,6 +18,12 @@ function Segmentation() {
     const videoRef = useRef(null);
     const streamRef = useRef(null);
 
+    const clearPreviousImage = () => {
+        setImage(null);
+        setMaskImage(null);
+        setResults(null);
+    };
+
     // ทดสอบการโหลดโมเดล
     // const testModel = async () => {
     //     try {
@@ -55,6 +61,7 @@ function Segmentation() {
 
     // เปิดกล้อง
     const openCamera = async () => {
+        clearPreviousImage();
         try {
             const stream = await navigator.mediaDevices.getUserMedia({
                 video: { facingMode: "environment" },
@@ -116,14 +123,16 @@ function Segmentation() {
 
         if (!file.type.startsWith("image/")) {
             alert("กรุณาเลือกไฟล์รูปภาพ");
+            event.target.value = "";
             return;
         }
 
-        const imageUrl = URL.createObjectURL(file);
+        clearPreviousImage();
 
+        const imageUrl = URL.createObjectURL(file);
         setImage(imageUrl);
-        setMaskImage(null);
-        setResults(null);
+
+        event.target.value = "";
     };
 
     // ประมวลผล Segmentation
@@ -319,6 +328,14 @@ function Segmentation() {
                                 ? "แสดงภาพต้นฉบับพร้อม Segmentation Mask"
                                 : "ภาพต้นฉบับ"}
                         </p>
+                        <button
+                            onClick={() => {
+                                clearPreviousImage();
+                            }}
+                            className="mt-3 rounded-lg bg-red-600 px-4 py-2 text-white hover:bg-red-700"
+                        >
+                            Remove Image
+                        </button>
 
                     </div>
                 )}

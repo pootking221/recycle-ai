@@ -11,7 +11,12 @@ function Detection() {
     const [loading, setLoading] = useState(false);
     const [results, setResults] = useState(null);
     const [imageSize, setImageSize] = useState(null);
-
+    //function เคลียรูปเก่า
+    const clearPreviousImage = () => {
+        setImage(null);
+        setResults(null);
+        setImageSize(null);
+    };
     //   test
     // const testModel = async () => {
     //     try {
@@ -96,6 +101,7 @@ function Detection() {
 
 
     const openCamera = async () => {
+        clearPreviousImage();
         try {
             const stream = await navigator.mediaDevices.getUserMedia({
                 video: { facingMode: "environment" },
@@ -115,6 +121,7 @@ function Detection() {
     };
 
     const closeCamera = () => {
+
         streamRef.current?.getTracks().forEach((track) => track.stop());
         streamRef.current = null;
         setCamera(false);
@@ -153,9 +160,18 @@ function Detection() {
                             className="hidden"
                             onChange={(e) => {
                                 const file = e.target.files[0];
-                                if (file) setImage(URL.createObjectURL(file));
+
+                                if (file) {
+                                    clearPreviousImage();
+                                    setImage(URL.createObjectURL(file));
+                                }
+
+                                e.target.value = "";
                             }}
                         />
+
+
+
                     </label>
 
                     <button
@@ -251,17 +267,17 @@ function Detection() {
                                     })}
                                 </svg>
                             )}
+                            <button
+                                onClick={() => {
+                                    clearPreviousImage();
+                                }}
+                                className="mt-3 rounded-lg bg-red-600 px-4 py-2 text-white hover:bg-red-700"
+                            >
+                                Remove Image
+                            </button>
                         </div>
 
-                        <button
-                            onClick={() => {
-                                setImage(null);
-                                setResults(null);
-                            }}
-                            className="mt-3 block text-sm text-red-500"
-                        >
-                            Remove Image
-                        </button>
+
                     </div>
                 )}
                 {results && (

@@ -13,7 +13,7 @@ import {
 const menus = [
   {
     name: "Detection",
-    path: "/detection",
+    path: "/",
     icon: Scan,
   },
   {
@@ -69,7 +69,7 @@ function Sidebar() {
         <div className="flex h-20 shrink-0 items-center justify-between border-b border-gray-100 px-5">
           <div className="flex items-center gap-3">
             <div className="rounded-xl bg-green-100 p-2 text-green-700">
-              <Recycle size={25} />
+              <Recycle size={32} />
             </div>
 
             {!isCollapsed && (
@@ -119,37 +119,6 @@ function Sidebar() {
             );
           })}
         </nav>
-
-        {/* Bottom Section */}
-        <div className="shrink-0 border-t border-gray-100 p-4">
-          <div className="rounded-xl bg-green-50 p-3">
-            {!isCollapsed ? (
-              <>
-                <p className="text-sm font-semibold text-green-800">
-                  Recycle AI
-                </p>
-                <p className="mt-1 text-xs text-green-700">
-                  AI-powered waste classification
-                </p>
-              </>
-            ) : (
-              <Recycle size={22} className="mx-auto text-green-700" />
-            )}
-          </div>
-
-          {/* Collapse Button - Desktop */}
-          <button
-            type="button"
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            className="mt-3 hidden w-full items-center justify-center rounded-lg p-2 text-gray-500 transition hover:bg-gray-100 md:flex"
-            aria-label="Toggle sidebar width"
-          >
-            <ChevronLeft
-              size={20}
-              className={isCollapsed ? "rotate-180" : ""}
-            />
-          </button>
-        </div>
       </aside>
     </>
   );

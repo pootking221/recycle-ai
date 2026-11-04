@@ -8,7 +8,7 @@ function Navbar() {
       {/* Left */}
       <div className="flex items-center gap-3">
         <div className="rounded-xl bg-green-100 p-2.5 text-green-700">
-          <Recycle size={24} />
+          <Recycle size={32} />
         </div>
 
         <div>
@@ -24,13 +24,6 @@ function Navbar() {
       {/* Right */}
       <div className="flex items-center gap-5">
         <div className="hidden text-right sm:block">
-          <p className="text-sm font-medium text-gray-800">
-            {new Date().toLocaleDateString("th-TH", {
-              day: "numeric",
-              month: "long",
-              year: "numeric",
-            })}
-          </p>
           <p className="text-xs text-gray-500">
             Local Processing
           </p>

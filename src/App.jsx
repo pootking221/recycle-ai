@@ -21,8 +21,7 @@ function App() {
 
           <main className="p-4 pt-16 sm:p-6 md:p-8 md:pt-8">
             <Routes>
-            
-              <Route path="/detection" element={<Detection />} />
+              <Route path="/" element={<Detection />} />
               <Route path="/segmentation" element={<Segmentation />} />
             </Routes>
           </main>
