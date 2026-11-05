@@ -29,7 +29,7 @@ function Detection() {
             setResults(null);
 
             // โหลดโมเดลและเตรียมภาพ
-            const session = await loadModel("/models/detection_1.onnx");
+            const session = await loadModel("/models/best.onnx");
             const img = new Image();
             img.src = image;
 
